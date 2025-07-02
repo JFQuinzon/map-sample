@@ -74,9 +74,9 @@ jobs:
             sudo ln -sfn "\$TARGET_DIR" "\$LIVE_SYMLINK"
 
             echo "🚀 Restarting main PM2 instance via symlink..."
-            pm2 delete test-apgit-3000 || true
-            cd "\$LIVE_SYMLINK"
-            pm2 start npm --name "test-apgit-3000" -- start
+            echo "🔁 Reloading PM2 with new symlink target..."
+            pm2 reload test-apgit-3000 --update-env --cwd "$LIVE_SYMLINK" || \
+            pm2 start npm --name "test-apgit-3000" --cwd "$LIVE_SYMLINK" -- start
 
             echo "🧹 Cleaning up temporary PM2..."
             pm2 delete test-apgit-temp || true
