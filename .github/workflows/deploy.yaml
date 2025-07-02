@@ -31,11 +31,11 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" << 'EOF'
-           cd /usr/share/nginx/html/test.apgitsolutions.com 
-           git clone git@github.com:JFQuinzon/map-sample.git .
+           sudo cd /usr/share/nginx/html/test.apgitsolutions.com 
+           sudo git clone git@github.com:JFQuinzon/map-sample.git .
 
-           git pull origin
-           npm install
+           sudo git pull origin
+           sudo npm install
 
            sudo pm2 restart 1
            sudo service nginx restart
