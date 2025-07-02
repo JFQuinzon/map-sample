@@ -23,7 +23,7 @@ jobs:
       - name: Deploy via SSH
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd /usr/share/nginx/html/test.apgitsolutions.com/test-apgit
+            cd /usr/share/nginx/html/test.apgitsolutions.com/
 
             if [ ! -d ".git" ]; then
               git clone git@github.com:JFQuinzon/map-sample.git .
