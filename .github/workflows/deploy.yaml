@@ -32,7 +32,7 @@ jobs:
             TEMP_DIR="/tmp/deploy-temp"
 
             echo "🔍 Detecting current active port..."
-            CURRENT_PORT=\$(grep -Po '(?<=:)\d+' /etc/nginx/upstreams/active_backend.conf)
+            CURRENT_PORT=\$(awk -F':' '{print \$2}' /etc/nginx/upstreams/active_backend.conf | tr -d ' ;')
 
             if [ "\$CURRENT_PORT" = "\$GREEN_PORT" ]; then
               TARGET_PORT="\$BLUE_PORT"
