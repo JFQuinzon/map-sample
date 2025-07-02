@@ -1,4 +1,4 @@
-name: Deploy to LEMP
+name: Deploy to LEMP (Blue-Green Smart)
 
 on:
   push:
@@ -25,29 +25,43 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             set -e
 
-            DEPLOY_DIR="/usr/share/nginx/html/test.apgitsolutions.com"
-            TEMP_DIR="/tmp/deploy-tmp"
+            LIVE_SYMLINK="/usr/share/nginx/html/test-apgitsolutions.com"
+            GREEN_DIR="/usr/share/nginx/html/test-apgitsolutions-green"
+            BLUE_DIR="/usr/share/nginx/html/test-apgitsolutions-blue"
+            TEMP_DIR="/tmp/deploy-temp"
 
-            echo "📥 Cloning repository..."
+            echo "🔍 Detecting current active environment..."
+            CURRENT_TARGET="$(readlink "$LIVE_SYMLINK")"
+
+            if [ "$CURRENT_TARGET" = "$GREEN_DIR" ]; then
+              TARGET_DIR="$BLUE_DIR"
+              NEXT_COLOR="BLUE"
+            else
+              TARGET_DIR="$GREEN_DIR"
+              NEXT_COLOR="GREEN"
+            fi
+
+            echo "📥 Cloning repo into temp directory..."
             rm -rf "$TEMP_DIR"
             git clone https://github.com/JFQuinzon/map-sample.git "$TEMP_DIR"
 
-            echo "🧹 Cleaning and deploying to $DEPLOY_DIR..."
-            sudo rm -rf "$DEPLOY_DIR"/*
-            sudo cp -r "$TEMP_DIR"/* "$DEPLOY_DIR"
-            sudo cp -r "$TEMP_DIR"/.[!.]* "$DEPLOY_DIR" || true  # copy hidden files
+            echo "♻️ Cleaning target deployment directory: $TARGET_DIR..."
+            sudo rm -rf "$TARGET_DIR"/*
+            sudo cp -r "$TEMP_DIR"/* "$TARGET_DIR"
+            sudo cp -r "$TEMP_DIR"/.[!.]* "$TARGET_DIR" || true
 
-            cd "$DEPLOY_DIR"
-
+            cd "$TARGET_DIR"
             echo "📦 Installing dependencies..."
-            sudo npm install
+            npm install
 
-            echo "🚀 Building app..."
-            sudo npm run build
+            echo "🏗️ Building project..."
+            npm run build
 
-            echo "🚀 Restarting app via PM2..."
+            echo "🚀 Restarting PM2..."
             pm2 restart test-apgit-3000 || pm2 start npm --name "test-apgit-3000" -- start
 
-            # echo "🔄 Restarting Nginx..."
-            # sudo service nginx restart
+            echo "🔁 Switching symlink to $NEXT_COLOR..."
+            sudo ln -sfn "$TARGET_DIR" "$LIVE_SYMLINK"
+
+            echo "✅ Blue-Green deployment to $NEXT_COLOR completed!"
           EOF

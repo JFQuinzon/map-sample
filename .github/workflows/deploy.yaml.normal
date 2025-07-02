@@ -1,0 +1,53 @@
+name: Deploy to LEMP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e
+
+            DEPLOY_DIR="/usr/share/nginx/html/test.apgitsolutions.com"
+            TEMP_DIR="/tmp/deploy-tmp"
+
+            echo "📥 Cloning repository..."
+            rm -rf "$TEMP_DIR"
+            git clone https://github.com/JFQuinzon/map-sample.git "$TEMP_DIR"
+
+            echo "🧹 Cleaning and deploying to $DEPLOY_DIR..."
+            sudo rm -rf "$DEPLOY_DIR"/*
+            sudo cp -r "$TEMP_DIR"/* "$DEPLOY_DIR"
+            sudo cp -r "$TEMP_DIR"/.[!.]* "$DEPLOY_DIR" || true  # copy hidden files
+
+            cd "$DEPLOY_DIR"
+
+            echo "📦 Installing dependencies..."
+            sudo npm install
+
+            echo "🚀 Building app..."
+            sudo npm run build
+
+            echo "🚀 Restarting app via PM2..."
+            pm2 restart test-apgit-3000 || pm2 start npm --name "test-apgit-3000" -- start
+
+            # echo "🔄 Restarting Nginx..."
+            # sudo service nginx restart
+          EOF
