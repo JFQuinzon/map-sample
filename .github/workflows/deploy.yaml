@@ -23,15 +23,28 @@ jobs:
       - name: Deploy via SSH
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd /usr/share/nginx/html/test.apgitsolutions.com/
+            set -e
 
-            if [ ! -d ".git" ]; then
-              git clone git@github.com:JFQuinzon/map-sample.git .
-            else
-              git pull origin main
-            fi
+            DEPLOY_DIR="/usr/share/nginx/html/test.apgitsolutions.com"
+            TEMP_DIR="/tmp/deploy-tmp"
 
+            echo "📥 Cloning repository..."
+            rm -rf "$TEMP_DIR"
+            git clone https://github.com/JFQuinzon/map-sample.git "$TEMP_DIR"
+
+            echo "🧹 Cleaning and deploying to $DEPLOY_DIR..."
+            rm -rf "$DEPLOY_DIR"/*
+            cp -r "$TEMP_DIR"/* "$DEPLOY_DIR"
+            cp -r "$TEMP_DIR"/.[!.]* "$DEPLOY_DIR" || true  # copy hidden files like .env, .gitignore
+
+            cd "$DEPLOY_DIR"
+
+            echo "📦 Installing dependencies..."
             npm install
+
+            echo "🚀 Restarting app via PM2..."
             pm2 restart test-apgit-3000 || pm2 start npm --name "test-apgit-3000" -- start
+
+            echo "🔄 Restarting Nginx..."
             sudo service nginx restart
           EOF
