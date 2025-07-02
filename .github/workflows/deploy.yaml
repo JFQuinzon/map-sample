@@ -1,9 +1,8 @@
-name: Deploy to LEMP (Blue-Green Zero-Downtime)
+name: Deploy Zero Downtime Blue-Green
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
@@ -22,65 +21,63 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << "EOF"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             set -e
 
-            LIVE_SYMLINK="/usr/share/nginx/html/test-apgitsolutions.com"
+            GREEN_PORT=3002
+            BLUE_PORT=3001
+
             GREEN_DIR="/usr/share/nginx/html/test-apgit-green"
             BLUE_DIR="/usr/share/nginx/html/test-apgit-blue"
             TEMP_DIR="/tmp/deploy-temp"
 
-            echo "🔍 Detecting current active environment..."
-            CURRENT_TARGET="\$(readlink \$LIVE_SYMLINK)"
-
-            if [ "\$CURRENT_TARGET" = "\$GREEN_DIR" ]; then
+            CURRENT_PORT=\$(grep -Po '\d+' /etc/nginx/upstreams/active_backend.conf)
+            if [ "\$CURRENT_PORT" = "\$GREEN_PORT" ]; then
+              TARGET_PORT="\$BLUE_PORT"
               TARGET_DIR="\$BLUE_DIR"
-              NEXT_COLOR="BLUE"
+              TARGET_CONF="/etc/nginx/upstreams/blue.conf"
+              NAME="test-apgit-blue"
             else
+              TARGET_PORT="\$GREEN_PORT"
               TARGET_DIR="\$GREEN_DIR"
-              NEXT_COLOR="GREEN"
+              TARGET_CONF="/etc/nginx/upstreams/green.conf"
+              NAME="test-apgit-green"
             fi
 
             echo "📥 Cloning repo into temp directory..."
             sudo rm -rf "\$TEMP_DIR"
             git clone https://github.com/JFQuinzon/map-sample.git "\$TEMP_DIR"
 
-            echo "♻️ Cleaning target deployment directory: \$TARGET_DIR..."
+            echo "♻️ Updating target directory \$TARGET_DIR..."
+            sudo rm -rf "\$TARGET_DIR"
             sudo mkdir -p "\$TARGET_DIR"
-            sudo rm -rf "\$TARGET_DIR"/*
             sudo cp -r "\$TEMP_DIR"/* "\$TARGET_DIR"
             sudo cp -r "\$TEMP_DIR"/.[!.]* "\$TARGET_DIR" || true
 
-            echo "📦 Installing dependencies..."
             cd "\$TARGET_DIR"
+            echo "📦 Installing dependencies..."
             sudo npm install
 
             echo "🏗️ Building project..."
             sudo npm run build
 
-            echo "🚀 Starting temporary PM2 instance for \$NEXT_COLOR..."
-            pm2 start npm --name "test-apgit-temp" -- start
+            echo "🚀 Starting or restarting PM2 app on port \$TARGET_PORT..."
+            pm2 start npm --name "\$NAME" -- start -- --port \$TARGET_PORT || \
+            pm2 restart "\$NAME" -- update-env
 
-            echo "⏳ Waiting for app to respond..."
+            echo "⏳ Waiting for app to respond on port \$TARGET_PORT..."
             for i in {1..10}; do
-              if curl -s http://127.0.0.1:3000 > /dev/null; then
-                echo "✅ App is live!"
+              if curl -s http://127.0.0.1:\$TARGET_PORT > /dev/null; then
+                echo "✅ App is ready!"
                 break
               fi
               echo "Waiting... (\$i)"
               sleep 2
             done
 
-            echo "🔁 Switching symlink to \$NEXT_COLOR..."
-            sudo ln -sfn "\$TARGET_DIR" "\$LIVE_SYMLINK"
+            echo "🔁 Switching active NGINX upstream..."
+            sudo ln -sfn "\$TARGET_CONF" /etc/nginx/upstreams/active_backend.conf
+            sudo nginx -s reload
 
-            echo "🚀 Restarting main PM2 instance via symlink..."
-            pm2 delete test-apgit-3000 || true
-            cd "\$LIVE_SYMLINK"
-            pm2 start npm --name "test-apgit-3000" -- start
-
-            echo "🧹 Cleaning up temporary PM2 instance..."
-            pm2 delete test-apgit-temp || true
-
-            echo "✅ Blue-Green deployment to \$NEXT_COLOR completed!"
+            echo "✅ Deployment complete with ZERO downtime!"
           EOF
