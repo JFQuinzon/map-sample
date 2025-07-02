@@ -42,7 +42,7 @@ jobs:
             fi
 
             echo "📥 Cloning repo into temp directory..."
-            rm -rf "$TEMP_DIR"
+            sudo rm -rf "$TEMP_DIR"
             git clone https://github.com/JFQuinzon/map-sample.git "$TEMP_DIR"
 
             echo "♻️ Cleaning target deployment directory: $TARGET_DIR..."
@@ -52,10 +52,10 @@ jobs:
 
             cd "$TARGET_DIR"
             echo "📦 Installing dependencies..."
-            npm install
+            sudo npm install
 
             echo "🏗️ Building project..."
-            npm run build
+            sudo npm run build
 
             echo "🚀 Restarting PM2..."
             pm2 restart test-apgit-3000 || pm2 start npm --name "test-apgit-3000" -- start
