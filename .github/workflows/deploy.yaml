@@ -13,30 +13,26 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+
       - name: Set up SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-          ssh-keyscan -p 22 -H "$SSH_HOST" >> ~/.ssh/known_hosts
-
-      - name: Deploy via SSH v2
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
+      - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" << 'EOF'
-           cd /usr/share/nginx/html/test.apgitsolutions.com/test-apgit
-           sudo git clone git@github.com:JFQuinzon/map-sample.git .
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd /usr/share/nginx/html/test.apgitsolutions.com/test-apgit
 
-           sudo git pull origin
-           sudo npm install
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/JFQuinzon/map-sample.git .
+            else
+              git pull origin main
+            fi
 
-           sudo pm2 restart 0
-           sudo service nginx restart
+            npm install
+            pm2 restart test-apgit || pm2 start npm --name "test-apgit" -- start
+            sudo service nginx restart
           EOF
