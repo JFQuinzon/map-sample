@@ -26,7 +26,7 @@ jobs:
             cd /usr/share/nginx/html/test.apgitsolutions.com/test-apgit
 
             if [ ! -d ".git" ]; then
-              git clone https://github.com/JFQuinzon/map-sample.git .
+              git clone git@github.com:JFQuinzon/map-sample.git .
             else
               git pull origin main
             fi
