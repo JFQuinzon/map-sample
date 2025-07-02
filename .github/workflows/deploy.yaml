@@ -21,7 +21,7 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << "EOF"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             set -e
 
             GREEN_PORT=3002
@@ -32,53 +32,53 @@ jobs:
             TEMP_DIR="/tmp/deploy-temp"
 
             echo "🔍 Detecting current active port..."
-            CURRENT_PORT=\$(awk -F':' '{print \$2}' /etc/nginx/upstreams/active_backend.conf | tr -d ' ;')
+            CURRENT_PORT=$(awk -F':' '{gsub(/[^0-9]/,"",$2); print $2}' /etc/nginx/upstreams/active_backend.conf)
 
-            if [ "\$CURRENT_PORT" = "\$GREEN_PORT" ]; then
-              TARGET_PORT="\$BLUE_PORT"
-              TARGET_DIR="\$BLUE_DIR"
+            if [ "$CURRENT_PORT" = "$GREEN_PORT" ]; then
+              TARGET_PORT="$BLUE_PORT"
+              TARGET_DIR="$BLUE_DIR"
               TARGET_CONF="/etc/nginx/upstreams/blue.conf"
               NAME="test-apgit-blue"
             else
-              TARGET_PORT="\$GREEN_PORT"
-              TARGET_DIR="\$GREEN_DIR"
+              TARGET_PORT="$GREEN_PORT"
+              TARGET_DIR="$GREEN_DIR"
               TARGET_CONF="/etc/nginx/upstreams/green.conf"
               NAME="test-apgit-green"
             fi
 
             echo "📥 Cloning repo into temp directory..."
-            sudo rm -rf "\$TEMP_DIR"
-            git clone https://github.com/JFQuinzon/map-sample.git "\$TEMP_DIR"
+            sudo rm -rf "$TEMP_DIR"
+            git clone https://github.com/JFQuinzon/map-sample.git "$TEMP_DIR"
 
-            echo "♻️ Updating target directory \$TARGET_DIR..."
-            sudo rm -rf "\$TARGET_DIR"
-            sudo mkdir -p "\$TARGET_DIR"
-            sudo cp -r "\$TEMP_DIR"/* "\$TARGET_DIR"
-            sudo cp -r "\$TEMP_DIR"/.[!.]* "\$TARGET_DIR" || true
+            echo "♻️ Updating target directory $TARGET_DIR..."
+            sudo rm -rf "$TARGET_DIR"
+            sudo mkdir -p "$TARGET_DIR"
+            sudo cp -r "$TEMP_DIR"/* "$TARGET_DIR"
+            sudo cp -r "$TEMP_DIR"/.[!.]* "$TARGET_DIR" || true
 
             echo "📦 Installing dependencies..."
-            cd "\$TARGET_DIR"
+            cd "$TARGET_DIR"
             sudo npm install
 
             echo "🏗️ Building project..."
             sudo npm run build
 
-            echo "🚀 Starting or restarting PM2 app on port \$TARGET_PORT..."
-            pm2 start npm --name "\$NAME" -- start -- --port \$TARGET_PORT || \
-            pm2 restart "\$NAME" -- update-env
+            echo "🚀 Starting or restarting PM2 app on port $TARGET_PORT..."
+            pm2 start npm --name "$NAME" -- start -- --port $TARGET_PORT || \
+            pm2 restart "$NAME" -- update-env
 
-            echo "⏳ Waiting for app to respond on port \$TARGET_PORT..."
+            echo "⏳ Waiting for app to respond on port $TARGET_PORT..."
             for i in {1..10}; do
-              if curl -s http://127.0.0.1:\$TARGET_PORT > /dev/null; then
+              if curl -s http://127.0.0.1:$TARGET_PORT > /dev/null; then
                 echo "✅ App is ready!"
                 break
               fi
-              echo "Waiting... (\$i)"
+              echo "Waiting... ($i)"
               sleep 2
             done
 
             echo "🔁 Switching active NGINX upstream..."
-            sudo ln -sfn "\$TARGET_CONF" /etc/nginx/upstreams/active_backend.conf
+            sudo ln -sfn "$TARGET_CONF" /etc/nginx/upstreams/active_backend.conf
             sudo nginx -s reload
 
             echo "✅ Deployment complete with ZERO downtime!"
