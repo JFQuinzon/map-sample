@@ -63,9 +63,9 @@ jobs:
             echo "🏗️ Building project..."
             sudo npm run build
 
-            echo "🚀 Starting or restarting PM2 app on port $TARGET_PORT..."
-            pm2 start npm --name "$NAME" -- start -- --port $TARGET_PORT || \
-            pm2 restart "$NAME" -- update-env
+            echo "🚀 Restarting PM2 app on port $TARGET_PORT..."
+            pm2 delete "$NAME" || true
+            pm2 start npm --name "$NAME" -- start -- --port $TARGET_PORT
 
             echo "⏳ Waiting for app to respond on port $TARGET_PORT..."
             for i in {1..10}; do
