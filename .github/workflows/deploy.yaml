@@ -48,6 +48,6 @@ jobs:
             echo "🚀 Restarting app via PM2..."
             pm2 restart test-apgit-3000 || pm2 start npm --name "test-apgit-3000" -- start
 
-            echo "🔄 Restarting Nginx..."
-            sudo service nginx restart
+            # echo "🔄 Restarting Nginx..."
+            # sudo service nginx restart
           EOF
