@@ -26,8 +26,8 @@ jobs:
             set -e
 
             LIVE_SYMLINK="/usr/share/nginx/html/test-apgitsolutions.com"
-            GREEN_DIR="/usr/share/nginx/html/test-apgitsolutions-green"
-            BLUE_DIR="/usr/share/nginx/html/test-apgitsolutions-blue"
+            GREEN_DIR="/usr/share/nginx/html/test-apgit-green"
+            BLUE_DIR="/usr/share/nginx/html/test-apgit-blue"
             TEMP_DIR="/tmp/deploy-temp"
 
             echo "🔍 Detecting current active environment..."
