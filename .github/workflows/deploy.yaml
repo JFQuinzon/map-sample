@@ -1,4 +1,4 @@
-name: Deploy to LEMP (Blue-Green Smart)
+name: Deploy to LEMP (Blue-Green Zero-Downtime)
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             set -e
 
             LIVE_SYMLINK="/usr/share/nginx/html/test-apgitsolutions.com"
@@ -57,13 +57,29 @@ jobs:
             echo "🏗️ Building project..."
             sudo npm run build
 
+            echo "🚀 Starting temporary PM2 instance for \$NEXT_COLOR..."
+            pm2 start npm --name "test-apgit-temp" -- start
+
+            echo "⏳ Waiting for app to respond..."
+            for i in {1..10}; do
+              if curl -s http://127.0.0.1:3000 > /dev/null; then
+                echo "✅ App is live!"
+                break
+              fi
+              echo "Waiting... (\$i)"
+              sleep 2
+            done
+
             echo "🔁 Switching symlink to \$NEXT_COLOR..."
             sudo ln -sfn "\$TARGET_DIR" "\$LIVE_SYMLINK"
 
-            echo "🚀 Restarting PM2 with new symlink target..."
+            echo "🚀 Restarting main PM2 instance via symlink..."
             pm2 delete test-apgit-3000 || true
             cd "\$LIVE_SYMLINK"
             pm2 start npm --name "test-apgit-3000" -- start
+
+            echo "🧹 Cleaning up temporary PM2..."
+            pm2 delete test-apgit-temp || true
 
             echo "✅ Blue-Green deployment to \$NEXT_COLOR completed!"
           EOF
