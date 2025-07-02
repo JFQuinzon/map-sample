@@ -31,7 +31,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" << 'EOF'
-           sudo cd /usr/share/nginx/html/test.apgitsolutions.com/test-apgit
+           cd /usr/share/nginx/html/test.apgitsolutions.com/test-apgit
            sudo git clone git@github.com:JFQuinzon/map-sample.git .
 
            sudo git pull origin
