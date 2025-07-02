@@ -32,6 +32,6 @@ jobs:
             fi
 
             npm install
-            pm2 restart test-apgit || pm2 start npm --name "test-apgit" -- start
+            pm2 restart test-apgit-3000 || pm2 start npm --name "test-apgit-3000" -- start
             sudo service nginx restart
           EOF
