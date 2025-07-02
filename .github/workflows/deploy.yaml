@@ -22,7 +22,7 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << "EOF"
             set -e
 
             LIVE_SYMLINK="/usr/share/nginx/html/test-apgitsolutions.com"
@@ -31,7 +31,7 @@ jobs:
             TEMP_DIR="/tmp/deploy-temp"
 
             echo "🔍 Detecting current active environment..."
-            CURRENT_TARGET="\$(readlink "\$LIVE_SYMLINK")"
+            CURRENT_TARGET="\$(readlink \$LIVE_SYMLINK)"
 
             if [ "\$CURRENT_TARGET" = "\$GREEN_DIR" ]; then
               TARGET_DIR="\$BLUE_DIR"
@@ -46,6 +46,7 @@ jobs:
             git clone https://github.com/JFQuinzon/map-sample.git "\$TEMP_DIR"
 
             echo "♻️ Cleaning target deployment directory: \$TARGET_DIR..."
+            sudo mkdir -p "\$TARGET_DIR"
             sudo rm -rf "\$TARGET_DIR"/*
             sudo cp -r "\$TEMP_DIR"/* "\$TARGET_DIR"
             sudo cp -r "\$TEMP_DIR"/.[!.]* "\$TARGET_DIR" || true
@@ -74,11 +75,11 @@ jobs:
             sudo ln -sfn "\$TARGET_DIR" "\$LIVE_SYMLINK"
 
             echo "🚀 Restarting main PM2 instance via symlink..."
-            echo "🔁 Reloading PM2 with new symlink target..."
-            pm2 reload test-apgit-3000 --update-env --cwd "$LIVE_SYMLINK" || \
-            pm2 start npm --name "test-apgit-3000" --cwd "$LIVE_SYMLINK" -- start
+            pm2 delete test-apgit-3000 || true
+            cd "\$LIVE_SYMLINK"
+            pm2 start npm --name "test-apgit-3000" -- start
 
-            echo "🧹 Cleaning up temporary PM2..."
+            echo "🧹 Cleaning up temporary PM2 instance..."
             pm2 delete test-apgit-temp || true
 
             echo "✅ Blue-Green deployment to \$NEXT_COLOR completed!"
