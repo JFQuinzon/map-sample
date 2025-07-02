@@ -31,37 +31,39 @@ jobs:
             TEMP_DIR="/tmp/deploy-temp"
 
             echo "🔍 Detecting current active environment..."
-            CURRENT_TARGET="$(readlink "$LIVE_SYMLINK")"
+            CURRENT_TARGET="\$(readlink "\$LIVE_SYMLINK")"
 
-            if [ "$CURRENT_TARGET" = "$GREEN_DIR" ]; then
-              TARGET_DIR="$BLUE_DIR"
+            if [ "\$CURRENT_TARGET" = "\$GREEN_DIR" ]; then
+              TARGET_DIR="\$BLUE_DIR"
               NEXT_COLOR="BLUE"
             else
-              TARGET_DIR="$GREEN_DIR"
+              TARGET_DIR="\$GREEN_DIR"
               NEXT_COLOR="GREEN"
             fi
 
             echo "📥 Cloning repo into temp directory..."
-            sudo rm -rf "$TEMP_DIR"
-            git clone https://github.com/JFQuinzon/map-sample.git "$TEMP_DIR"
+            sudo rm -rf "\$TEMP_DIR"
+            git clone https://github.com/JFQuinzon/map-sample.git "\$TEMP_DIR"
 
-            echo "♻️ Cleaning target deployment directory: $TARGET_DIR..."
-            sudo rm -rf "$TARGET_DIR"/*
-            sudo cp -r "$TEMP_DIR"/* "$TARGET_DIR"
-            sudo cp -r "$TEMP_DIR"/.[!.]* "$TARGET_DIR" || true
+            echo "♻️ Cleaning target deployment directory: \$TARGET_DIR..."
+            sudo rm -rf "\$TARGET_DIR"/*
+            sudo cp -r "\$TEMP_DIR"/* "\$TARGET_DIR"
+            sudo cp -r "\$TEMP_DIR"/.[!.]* "\$TARGET_DIR" || true
 
-            cd "$TARGET_DIR"
             echo "📦 Installing dependencies..."
+            cd "\$TARGET_DIR"
             sudo npm install
 
             echo "🏗️ Building project..."
             sudo npm run build
 
-            echo "🚀 Restarting PM2..."
-            pm2 restart test-apgit-3000 || pm2 start npm --name "test-apgit-3000" -- start
+            echo "🔁 Switching symlink to \$NEXT_COLOR..."
+            sudo ln -sfn "\$TARGET_DIR" "\$LIVE_SYMLINK"
 
-            echo "🔁 Switching symlink to $NEXT_COLOR..."
-            sudo ln -sfn "$TARGET_DIR" "$LIVE_SYMLINK"
+            echo "🚀 Restarting PM2 with new symlink target..."
+            pm2 delete test-apgit-3000 || true
+            cd "\$LIVE_SYMLINK"
+            pm2 start npm --name "test-apgit-3000" -- start
 
-            echo "✅ Blue-Green deployment to $NEXT_COLOR completed!"
+            echo "✅ Blue-Green deployment to \$NEXT_COLOR completed!"
           EOF
