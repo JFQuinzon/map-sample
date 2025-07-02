@@ -33,9 +33,9 @@ jobs:
             git clone https://github.com/JFQuinzon/map-sample.git "$TEMP_DIR"
 
             echo "🧹 Cleaning and deploying to $DEPLOY_DIR..."
-            rm -rf "$DEPLOY_DIR"/*
-            cp -r "$TEMP_DIR"/* "$DEPLOY_DIR"
-            cp -r "$TEMP_DIR"/.[!.]* "$DEPLOY_DIR" || true  # copy hidden files like .env, .gitignore
+            sudo rm -rf "$DEPLOY_DIR"/*
+            sudo cp -r "$TEMP_DIR"/* "$DEPLOY_DIR"
+            sudo cp -r "$TEMP_DIR"/.[!.]* "$DEPLOY_DIR" || true  # copy hidden files
 
             cd "$DEPLOY_DIR"
 
