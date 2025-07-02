@@ -4,22 +4,8 @@ const page = () => {
   return (
     <div>
       
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
-    <h1>HELLO WORLD v7</h1>
+    <h1>HELLO WORLD v8</h1>
+    <h1>HELLO WORLD v8</h1>
 
     </div>
   )
