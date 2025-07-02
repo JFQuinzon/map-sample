@@ -31,7 +31,9 @@ jobs:
             BLUE_DIR="/usr/share/nginx/html/test-apgit-blue"
             TEMP_DIR="/tmp/deploy-temp"
 
-            CURRENT_PORT=\$(grep -Po '\d+' /etc/nginx/upstreams/active_backend.conf)
+            echo "🔍 Detecting current active port..."
+            CURRENT_PORT=\$(grep -Po '(?<=:)\d+' /etc/nginx/upstreams/active_backend.conf)
+
             if [ "\$CURRENT_PORT" = "\$GREEN_PORT" ]; then
               TARGET_PORT="\$BLUE_PORT"
               TARGET_DIR="\$BLUE_DIR"
@@ -54,8 +56,8 @@ jobs:
             sudo cp -r "\$TEMP_DIR"/* "\$TARGET_DIR"
             sudo cp -r "\$TEMP_DIR"/.[!.]* "\$TARGET_DIR" || true
 
-            cd "\$TARGET_DIR"
             echo "📦 Installing dependencies..."
+            cd "\$TARGET_DIR"
             sudo npm install
 
             echo "🏗️ Building project..."
